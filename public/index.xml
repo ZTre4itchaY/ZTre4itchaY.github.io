@@ -196,26 +196,5 @@
 &lt;h3 id=&#34;2-使用方式&#34;&gt;2️⃣ 使用方式&lt;/h3&gt;
 &lt;p&gt;建立文件&lt;code&gt;src/proxy.ts&lt;/code&gt;，通过导出一个&lt;code&gt;proxy&lt;/code&gt;函数，以下是配置跨域的例子&lt;/p&gt;</description>
     </item>
-    <item>
-      <title>我的第一篇文章</title>
-      <link>http://localhost:1313/posts/%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87%E6%96%87%E7%AB%A0-copy/</link>
-      <pubDate>Thu, 23 Apr 2026 18:02:16 +0800</pubDate>
-      <guid>http://localhost:1313/posts/%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87%E6%96%87%E7%AB%A0-copy/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>我的第一篇文章</title>
-      <link>http://localhost:1313/posts/%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87%E6%96%87%E7%AB%A0/</link>
-      <pubDate>Thu, 23 Apr 2026 18:02:16 +0800</pubDate>
-      <guid>http://localhost:1313/posts/%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87%E6%96%87%E7%AB%A0/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>我的第二篇文章</title>
-      <link>http://localhost:1313/posts/%E6%88%91%E7%9A%84%E7%AC%AC%E4%BA%8C%E7%AF%87%E6%96%87%E7%AB%A0/</link>
-      <pubDate>Thu, 23 Apr 2026 18:02:16 +0800</pubDate>
-      <guid>http://localhost:1313/posts/%E6%88%91%E7%9A%84%E7%AC%AC%E4%BA%8C%E7%AF%87%E6%96%87%E7%AB%A0/</guid>
-      <description></description>
-    </item>
   </channel>
 </rss>

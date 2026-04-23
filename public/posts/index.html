@@ -108,51 +108,16 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
-    <h2 class="entry-hint-parent">Next 学习笔记
+    <h2 class="entry-hint-parent">Next 学习笔记（持续更新中）
     </h2>
   </header>
   <div class="entry-content">
     <p>📘 Next.js App Router 核心笔记 一、约定式页面组件 文件 作用 page.tsx 页面组件 layout.tsx 布局组件，状态持久化 template.tsx 布局组件，状态不持久，路由切换时重置 state 和 useEffect loading.tsx 页面加载时的占位组件（如接口请求期间） error.tsx 页面报错时展示的组件 二、路由导航（4种方式） 1️⃣ Link 组件 import Link from &#34;next/link&#34;; &lt;Link href={{ pathname: &#34;/about/me&#34;, query: { name: &#34;张三&#34; } }} prefetch={true} scroll={true} replace={true} &gt; me &lt;/Link&gt; prefetch：可视区内出现时预加载目标页面 scroll：是否自动保存滚动位置 replace：不保存历史记录 🔍 获取 query 参数
-import { useSearchParams } from &#34;next/navigation&#34;; const searchParams = useSearchParams(); const name = searchParams.get(&#34;name&#34;); // 单个 const names = searchParams.getAll(&#34;name&#34;); // 多个 2️⃣ useRouter Hook import { useRouter } from &#34;next/navigation&#34;; const router = useRouter(); router.push(&#34;/about/me?name=张三&#34;); router.replace(&#34;/page&#34;); router.back(); router.forward(); router.refresh(); router.prefetch(&#34;/about&#34;); 3️⃣ redirect / permanentRedirect import { redirect, permanentRedirect } from &#34;next/navigation&#34;; redirect(&#34;/login&#34;); // 307 permanentRedirect(&#34;/home&#34;); // 308 三、动态路由 1️⃣ 获取参数方式 import { useParams } from &#34;next/navigation&#34;; const params = useParams(); console.log(params); 2️⃣ 三种定义方式 模式 路径示例 params 值 [id] /shop/123 { id: &#34;123&#34; } [...id] /shop/123/456/789 { id: [&#34;123&#34;, &#34;456&#34;, &#34;789&#34;] } [[...id]] /shop 或 /shop/123 {} 或 { id: [&#34;123&#34;] } 四、平行路由 通过 @文件夹名 定义，自动注入到 layout 中，与 children 平级 ⚠️ 硬刷新会 404，需定义 default.tsx 解决 五、路由组 文件夹命名 (groupName)，不影响 URL 路径 可为不同组独立配置 layout app/ ├── (a)/ │ └── page.tsx ├── (b)/ │ └── page.tsx 六、路由处理程序（API Routes） 1️⃣ 基本结构 app/api/user/route.ts 2️⃣ 请求处理示例 import { NextRequest, NextResponse } from &#34;next/server&#34;; // GET with query params export async function GET(request: NextRequest) { const id = request.nextUrl.searchParams.get(&#34;id&#34;); return NextResponse.json({ id }); } // GET with dynamic params export async function GET( request: NextRequest, { params }: { params: Promise&lt;{ id: string }&gt; } ) { const { id } = await params; return NextResponse.json({ message: `Hello, ${id}!` }); } // POST with body export async function POST(request: NextRequest) { const body = await request.json(); return NextResponse.json(body); } 3️⃣ Cookies 操作 import { cookies } from &#34;next/headers&#34;; const cookieStore = await cookies(); cookieStore.set(&#34;token&#34;, &#34;value&#34;, { maxAge: 86400, httpOnly: true }); const token = cookieStore.get(&#34;token&#34;); console.log(token?.value); </p>
+import { useSearchParams } from &#34;next/navigation&#34;; const searchParams = useSearchParams(); const name = searchParams.get(&#34;name&#34;); // 单个 const names = searchParams.getAll(&#34;name&#34;); // 多个 2️⃣ useRouter Hook import { useRouter } from &#34;next/navigation&#34;; const router = useRouter(); router.push(&#34;/about/me?name=张三&#34;); router.replace(&#34;/page&#34;); router.back(); router.forward(); router.refresh(); router.prefetch(&#34;/about&#34;); 3️⃣ redirect / permanentRedirect import { redirect, permanentRedirect } from &#34;next/navigation&#34;; redirect(&#34;/login&#34;); // 307 permanentRedirect(&#34;/home&#34;); // 308 三、动态路由 1️⃣ 获取参数方式 import { useParams } from &#34;next/navigation&#34;; const params = useParams(); console.log(params); 2️⃣ 三种定义方式 模式 路径示例 params 值 [id] /shop/123 { id: &#34;123&#34; } [...id] /shop/123/456/789 { id: [&#34;123&#34;, &#34;456&#34;, &#34;789&#34;] } [[...id]] /shop 或 /shop/123 {} 或 { id: [&#34;123&#34;] } 四、平行路由 通过 @文件夹名 定义，自动注入到 layout 中，与 children 平级 ⚠️ 硬刷新会 404，需定义 default.tsx 解决 五、路由组 文件夹命名 (groupName)，不影响 URL 路径 可为不同组独立配置 layout app/ ├── (a)/ │ └── page.tsx ├── (b)/ │ └── page.tsx 六、路由处理程序（API Routes） 1️⃣ 基本结构 app/api/user/route.ts 2️⃣ 请求处理示例 import { NextRequest, NextResponse } from &#34;next/server&#34;; // GET with query params export async function GET(request: NextRequest) { const id = request.nextUrl.searchParams.get(&#34;id&#34;); return NextResponse.json({ id }); } // GET with dynamic params export async function GET( request: NextRequest, { params }: { params: Promise&lt;{ id: string }&gt; } ) { const { id } = await params; return NextResponse.json({ message: `Hello, ${id}!` }); } // POST with body export async function POST(request: NextRequest) { const body = await request.json(); return NextResponse.json(body); } 3️⃣ Cookies 操作 import { cookies } from &#34;next/headers&#34;; const cookieStore = await cookies(); cookieStore.set(&#34;token&#34;, &#34;value&#34;, { maxAge: 86400, httpOnly: true }); const token = cookieStore.get(&#34;token&#34;); console.log(token?.value); 七、AI 集成（DeepSeek） 1️⃣ 安装依赖 npm i ai @ai-sdk/deepseek @ai-sdk/react 2️⃣ 创建 API 路由 app/api/chat/route.ts import { createDeepSeek } from &#34;@ai-sdk/deepseek&#34;; import { streamText, convertToModelMessages } from &#34;ai&#34;; const deepseek = createDeepSeek({ apiKey: process.env.DEEPSEEK_API_KEY }); export async function POST(req: Request) { const { messages } = await req.json(); const result = await streamText({ model: deepseek(&#34;deepseek-chat&#34;), messages: await convertToModelMessages(messages), system: &#34;你是一个超级助手&#34;, }); return result.toUIMessageStreamResponse(); } 3️⃣ 客户端使用 import { useChat } from &#34;@ai-sdk/react&#34;; const { messages, sendMessage } = useChat(); // 默认请求 /api/chat 八、Proxy 代理 1️⃣ 主要功能 跨域请求处理 （避免 CORS） 接口转发（隐藏真实后端地址） 限流、鉴权、缓存 等中间层逻辑 2️⃣ 使用方式 建立文件src/proxy.ts，通过导出一个proxy函数，以下是配置跨域的例子
+...</p>
   </div>
   <footer class="entry-footer"><span title='2026-04-23 18:02:16 +0800 CST'>April 23, 2026</span></footer>
-  <a class="entry-link" aria-label="post link to Next 学习笔记" href="http://localhost:1313/posts/next%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2 class="entry-hint-parent">我的第一篇文章
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p></p>
-  </div>
-  <footer class="entry-footer"><span title='2026-04-23 18:02:16 +0800 CST'>April 23, 2026</span></footer>
-  <a class="entry-link" aria-label="post link to 我的第一篇文章" href="http://localhost:1313/posts/%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87%E6%96%87%E7%AB%A0-copy/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2 class="entry-hint-parent">我的第一篇文章
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p></p>
-  </div>
-  <footer class="entry-footer"><span title='2026-04-23 18:02:16 +0800 CST'>April 23, 2026</span></footer>
-  <a class="entry-link" aria-label="post link to 我的第一篇文章" href="http://localhost:1313/posts/%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87%E6%96%87%E7%AB%A0/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2 class="entry-hint-parent">我的第二篇文章
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p></p>
-  </div>
-  <footer class="entry-footer"><span title='2026-04-23 18:02:16 +0800 CST'>April 23, 2026</span></footer>
-  <a class="entry-link" aria-label="post link to 我的第二篇文章" href="http://localhost:1313/posts/%E6%88%91%E7%9A%84%E7%AC%AC%E4%BA%8C%E7%AF%87%E6%96%87%E7%AB%A0/"></a>
+  <a class="entry-link" aria-label="post link to Next 学习笔记（持续更新中）" href="http://localhost:1313/posts/next%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/"></a>
 </article>
     </main>
     
