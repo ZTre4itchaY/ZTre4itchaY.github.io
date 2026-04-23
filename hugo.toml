@@ -1,0 +1,6 @@
+baseURL = 'https://example.org/'
+locale = 'en-us'
+title = 'ZTre4itchaY的博客'
+theme = "PaperMod"
+[params.assets] 
+    disableFingerprinting = true

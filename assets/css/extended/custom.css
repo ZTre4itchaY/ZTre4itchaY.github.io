@@ -1,0 +1,176 @@
+/* assets/css/extended/custom.css */
+
+/* 让首页主要区域保持单列，并稍微增加最大宽度让卡片更舒展 */
+.main.home {
+    display: block;           /* 取消网格布局，恢复单列 */
+    max-width: 820px;        /* 可自行调节，建议比默认720px稍宽 */
+    margin: 0 auto;
+}
+
+/* ---------- 卡片样式（统一应用于所有文章条目） ---------- */
+.main.home .first-entry,
+.main.home .post-entry {
+    margin-bottom: 2rem !important;           /* 卡片之间的间距 */
+    background: var(--entry);                 /* 自动适配明暗主题 */
+    border-radius: 20px;                      /* 更大的圆角，更柔和 */
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05); /* 轻微阴影，不突兀 */
+    border: 1px solid var(--border);          /* 微妙的边框 */
+}
+
+/* 悬停效果 – 优雅上浮 + 阴影加深 */
+.main.home .first-entry:hover,
+.main.home .post-entry:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+    border-color: transparent;                /* 悬停时边框融入背景，更干净 */
+}
+
+/* 卡片内部内容区域的间距优化 */
+.main.home .first-entry .entry-header,
+.main.home .post-entry .entry-header {
+    padding: 1.8rem 1.8rem 0 1.8rem;
+}
+
+.main.home .first-entry .entry-header h2,
+.main.home .post-entry .entry-header h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+}
+
+/* 文章元信息（日期等）放在标题下方，更现代 */
+.main.home .first-entry .entry-header .post-meta,
+.main.home .post-entry .entry-header .post-meta {
+    margin-bottom: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--secondary);
+}
+
+/* 如果有封面图，让图片更好看（PaperMod部分主题支持） */
+.main.home .first-entry .entry-cover,
+.main.home .post-entry .entry-cover {
+    margin: 0.5rem 1.8rem 0 1.8rem;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+/* 摘要内容 */
+.main.home .first-entry .entry-content,
+.main.home .post-entry .entry-content {
+    padding: 0.5rem 1.8rem 0 1.8rem;
+}
+
+.main.home .first-entry .entry-content p,
+.main.home .post-entry .entry-content p {
+    margin: 0.75rem 0 0 0;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--content);
+    opacity: 0.85;
+}
+
+/* 阅读更多链接 – 加一个小箭头，更明确 */
+.main.home .first-entry .entry-content .read-more,
+.main.home .post-entry .entry-content .read-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 1rem;
+    font-weight: 500;
+    color: var(--primary);
+    transition: gap 0.2s;
+}
+
+.main.home .first-entry .entry-content .read-more::after,
+.main.home .post-entry .entry-content .read-more::after {
+    content: "→";
+    transition: transform 0.2s;
+}
+
+.main.home .first-entry .entry-content .read-more:hover::after,
+.main.home .post-entry .entry-content .read-more:hover::after {
+    transform: translateX(3px);
+}
+
+/* 文章底部（如果显示标签或更多元信息） */
+.main.home .first-entry .entry-footer,
+.main.home .post-entry .entry-footer {
+    padding: 0.5rem 1.8rem 1.5rem 1.8rem;
+    font-size: 0.85rem;
+    color: var(--secondary);
+    border-top: none;
+    background: transparent;
+}
+
+/* ---------- 对个人介绍区域（Profile Mode / HomeInfo）特殊处理 ---------- */
+.main.home .first-entry.home-info,
+.main.home .top-entry {
+    background: none;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    margin-bottom: 2rem;
+    transform: none;
+}
+
+.main.home .first-entry.home-info:hover,
+.main.home .top-entry:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* 可选：给个人头像增加一圈柔和光环 */
+.profile .avatar img {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s;
+}
+
+.profile .avatar img:hover {
+    transform: scale(1.02);
+}
+
+/* 分页按钮样式 – 更柔和 */
+.main.home .page-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.pagination a {
+    background: var(--entry);
+    border-radius: 40px;
+    padding: 0.5rem 1.2rem;
+    border: 1px solid var(--border);
+    transition: 0.2s;
+}
+
+.pagination a:hover {
+    background: var(--primary);
+    color: var(--theme);
+    border-color: var(--primary);
+}
+
+/* 移动端适配：内边距稍微缩小 */
+@media screen and (max-width: 768px) {
+    .main.home {
+        padding: 0 1rem;
+    }
+    .main.home .first-entry .entry-header,
+    .main.home .post-entry .entry-header,
+    .main.home .first-entry .entry-content,
+    .main.home .post-entry .entry-content,
+    .main.home .first-entry .entry-footer,
+    .main.home .post-entry .entry-footer {
+        padding-left: 1.2rem;
+        padding-right: 1.2rem;
+    }
+}

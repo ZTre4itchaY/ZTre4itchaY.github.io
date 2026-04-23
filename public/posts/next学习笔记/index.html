@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="auto">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Next 学习笔记（持续更新中） | ZTre4itchaY的博客</title>
+<meta name="keywords" content="">
+<meta name="description" content="📘 Next.js App Router 核心笔记
+一、约定式页面组件
+
+  
+      
+          文件
+          作用
+      
+  
+  
+      
+          page.tsx
+          页面组件
+      
+      
+          layout.tsx
+          布局组件，状态持久化
+      
+      
+          template.tsx
+          布局组件，状态不持久，路由切换时重置 state 和 useEffect
+      
+      
+          loading.tsx
+          页面加载时的占位组件（如接口请求期间）
+      
+      
+          error.tsx
+          页面报错时展示的组件
+      
+  
+
+
+二、路由导航（4种方式）
+1️⃣ Link 组件
+import Link from &#34;next/link&#34;;
+
+&lt;Link
+  href={{ pathname: &#34;/about/me&#34;, query: { name: &#34;张三&#34; } }}
+  prefetch={true}
+  scroll={true}
+  replace={true}
+&gt;
+  me
+&lt;/Link&gt;
+
+prefetch：可视区内出现时预加载目标页面
+scroll：是否自动保存滚动位置
+replace：不保存历史记录
+
+🔍 获取 query 参数
+import { useSearchParams } from &#34;next/navigation&#34;;
+
+const searchParams = useSearchParams();
+const name = searchParams.get(&#34;name&#34;);      // 单个
+const names = searchParams.getAll(&#34;name&#34;);  // 多个
+2️⃣ useRouter Hook
+import { useRouter } from &#34;next/navigation&#34;;
+
+const router = useRouter();
+router.push(&#34;/about/me?name=张三&#34;);
+router.replace(&#34;/page&#34;);
+router.back();
+router.forward();
+router.refresh();
+router.prefetch(&#34;/about&#34;);
+3️⃣ redirect / permanentRedirect
+import { redirect, permanentRedirect } from &#34;next/navigation&#34;;
+
+redirect(&#34;/login&#34;);              // 307
+permanentRedirect(&#34;/home&#34;);      // 308
+三、动态路由
+1️⃣ 获取参数方式
+import { useParams } from &#34;next/navigation&#34;;
+const params = useParams();
+console.log(params);
+2️⃣ 三种定义方式
+
+  
+      
+          模式
+          路径示例
+          params 值
+      
+  
+  
+      
+          [id]
+          /shop/123
+          { id: &quot;123&quot; }
+      
+      
+          [...id]
+          /shop/123/456/789
+          { id: [&quot;123&quot;, &quot;456&quot;, &quot;789&quot;] }
+      
+      
+          [[...id]]
+          /shop 或 /shop/123
+          {} 或 { id: [&quot;123&quot;] }
+      
+  
+
+四、平行路由
+
+通过 @文件夹名 定义，自动注入到 layout 中，与 children 平级
+⚠️ 硬刷新会 404，需定义 default.tsx 解决
+
+五、路由组
+
+文件夹命名 (groupName)，不影响 URL 路径
+可为不同组独立配置 layout
+
+app/
+├── (a)/
+│   └── page.tsx
+├── (b)/
+│   └── page.tsx
+六、路由处理程序（API Routes）
+1️⃣ 基本结构
+app/api/user/route.ts
+2️⃣ 请求处理示例
+import { NextRequest, NextResponse } from &#34;next/server&#34;;
+
+// GET with query params
+export async function GET(request: NextRequest) {
+  const id = request.nextUrl.searchParams.get(&#34;id&#34;);
+  return NextResponse.json({ id });
+}
+
+// GET with dynamic params
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise&lt;{ id: string }&gt; }
+) {
+  const { id } = await params;
+  return NextResponse.json({ message: `Hello, ${id}!` });
+}
+
+// POST with body
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  return NextResponse.json(body);
+}
+3️⃣ Cookies 操作
+import { cookies } from &#34;next/headers&#34;;
+
+const cookieStore = await cookies();
+cookieStore.set(&#34;token&#34;, &#34;value&#34;, { maxAge: 86400, httpOnly: true });
+const token = cookieStore.get(&#34;token&#34;);
+console.log(token?.value);
+七、AI 集成（DeepSeek）
+1️⃣ 安装依赖
+npm i ai @ai-sdk/deepseek @ai-sdk/react
+2️⃣ 创建 API 路由 app/api/chat/route.ts
+import { createDeepSeek } from &#34;@ai-sdk/deepseek&#34;;
+import { streamText, convertToModelMessages } from &#34;ai&#34;;
+
+const deepseek = createDeepSeek({ apiKey: process.env.DEEPSEEK_API_KEY });
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+  const result = await streamText({
+    model: deepseek(&#34;deepseek-chat&#34;),
+    messages: await convertToModelMessages(messages),
+    system: &#34;你是一个超级助手&#34;,
+  });
+  return result.toUIMessageStreamResponse();
+}
+3️⃣ 客户端使用
+import { useChat } from &#34;@ai-sdk/react&#34;;
+
+const { messages, sendMessage } = useChat(); // 默认请求 /api/chat
+八、Proxy 代理
+1️⃣ 主要功能
+
+跨域请求处理 （避免 CORS）
+接口转发（隐藏真实后端地址）
+限流、鉴权、缓存 等中间层逻辑
+
+2️⃣ 使用方式
+建立文件src/proxy.ts，通过导出一个proxy函数，以下是配置跨域的例子">
+<meta name="author" content="">
+<link rel="canonical" href="http://localhost:1313/posts/next%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.css" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/next%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="http://localhost:1313/" accesskey="h" title="ZTre4itchaY的博客 (Alt + H)">ZTre4itchaY的博客</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+        </ul>
+    </nav>
+</header>
+<main class="main ">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title entry-hint-parent">
+      Next 学习笔记（持续更新中）
+    </h1>
+    <div class="post-meta"><span title='2026-04-23 18:02:16 +0800 CST'>April 23, 2026</span>
+
+</div>
+  </header> 
+  <div class="post-content md-content"><h1 id="-nextjs-app-router-核心笔记">📘 Next.js App Router 核心笔记<a hidden class="anchor" aria-hidden="true" href="#-nextjs-app-router-核心笔记">#</a></h1>
+<h2 id="一约定式页面组件">一、约定式页面组件<a hidden class="anchor" aria-hidden="true" href="#一约定式页面组件">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>文件</th>
+          <th>作用</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>page.tsx</code></td>
+          <td>页面组件</td>
+      </tr>
+      <tr>
+          <td><code>layout.tsx</code></td>
+          <td>布局组件，状态持久化</td>
+      </tr>
+      <tr>
+          <td><code>template.tsx</code></td>
+          <td>布局组件，状态不持久，路由切换时重置 state 和 useEffect</td>
+      </tr>
+      <tr>
+          <td><code>loading.tsx</code></td>
+          <td>页面加载时的占位组件（如接口请求期间）</td>
+      </tr>
+      <tr>
+          <td><code>error.tsx</code></td>
+          <td>页面报错时展示的组件</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="二路由导航4种方式">二、路由导航（4种方式）<a hidden class="anchor" aria-hidden="true" href="#二路由导航4种方式">#</a></h2>
+<h3 id="1-link-组件">1️⃣ <code>Link</code> 组件<a hidden class="anchor" aria-hidden="true" href="#1-link-组件">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-tsx" data-lang="tsx"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> <span style="color:#a6e22e">Link</span> <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;next/link&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>&lt;<span style="color:#f92672">Link</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span>{{ <span style="color:#a6e22e">pathname</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;/about/me&#34;</span>, <span style="color:#a6e22e">query</span><span style="color:#f92672">:</span> { <span style="color:#a6e22e">name</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;张三&#34;</span> } }}
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">prefetch</span><span style="color:#f92672">=</span>{<span style="color:#66d9ef">true</span>}
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">scroll</span><span style="color:#f92672">=</span>{<span style="color:#66d9ef">true</span>}
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">replace</span><span style="color:#f92672">=</span>{<span style="color:#66d9ef">true</span>}
+</span></span><span style="display:flex;"><span>&gt;
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">me</span>
+</span></span><span style="display:flex;"><span>&lt;/<span style="color:#f92672">Link</span>&gt;
+</span></span></code></pre></div><ul>
+<li><code>prefetch</code>：可视区内出现时预加载目标页面</li>
+<li><code>scroll</code>：是否自动保存滚动位置</li>
+<li><code>replace</code>：不保存历史记录</li>
+</ul>
+<p>🔍 获取 query 参数</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-tsx" data-lang="tsx"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">useSearchParams</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;next/navigation&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">searchParams</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">useSearchParams</span>();
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">name</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">searchParams</span>.<span style="color:#66d9ef">get</span>(<span style="color:#e6db74">&#34;name&#34;</span>);      <span style="color:#75715e">// 单个
+</span></span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">names</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">searchParams</span>.<span style="color:#a6e22e">getAll</span>(<span style="color:#e6db74">&#34;name&#34;</span>);  <span style="color:#75715e">// 多个
+</span></span></span></code></pre></div><h3 id="2-userouter-hook">2️⃣ useRouter Hook<a hidden class="anchor" aria-hidden="true" href="#2-userouter-hook">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-tsx" data-lang="tsx"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">useRouter</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;next/navigation&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">router</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">useRouter</span>();
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">router</span>.<span style="color:#a6e22e">push</span>(<span style="color:#e6db74">&#34;/about/me?name=张三&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">router</span>.<span style="color:#a6e22e">replace</span>(<span style="color:#e6db74">&#34;/page&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">router</span>.<span style="color:#a6e22e">back</span>();
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">router</span>.<span style="color:#a6e22e">forward</span>();
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">router</span>.<span style="color:#a6e22e">refresh</span>();
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">router</span>.<span style="color:#a6e22e">prefetch</span>(<span style="color:#e6db74">&#34;/about&#34;</span>);
+</span></span></code></pre></div><h3 id="3-redirect--permanentredirect">3️⃣ redirect / permanentRedirect<a hidden class="anchor" aria-hidden="true" href="#3-redirect--permanentredirect">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-tsx" data-lang="tsx"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">redirect</span>, <span style="color:#a6e22e">permanentRedirect</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;next/navigation&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">redirect</span>(<span style="color:#e6db74">&#34;/login&#34;</span>);              <span style="color:#75715e">// 307
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">permanentRedirect</span>(<span style="color:#e6db74">&#34;/home&#34;</span>);      <span style="color:#75715e">// 308
+</span></span></span></code></pre></div><h2 id="三动态路由">三、动态路由<a hidden class="anchor" aria-hidden="true" href="#三动态路由">#</a></h2>
+<h3 id="1-获取参数方式">1️⃣ 获取参数方式<a hidden class="anchor" aria-hidden="true" href="#1-获取参数方式">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-tsx" data-lang="tsx"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">useParams</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;next/navigation&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">params</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">useParams</span>();
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#a6e22e">params</span>);
+</span></span></code></pre></div><h3 id="2-三种定义方式">2️⃣ 三种定义方式<a hidden class="anchor" aria-hidden="true" href="#2-三种定义方式">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>模式</th>
+          <th>路径示例</th>
+          <th>params 值</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>[id]</code></td>
+          <td><code>/shop/123</code></td>
+          <td><code>{ id: &quot;123&quot; }</code></td>
+      </tr>
+      <tr>
+          <td><code>[...id]</code></td>
+          <td><code>/shop/123/456/789</code></td>
+          <td><code>{ id: [&quot;123&quot;, &quot;456&quot;, &quot;789&quot;] }</code></td>
+      </tr>
+      <tr>
+          <td><code>[[...id]]</code></td>
+          <td><code>/shop 或 /shop/123</code></td>
+          <td><code>{} 或 { id: [&quot;123&quot;] }</code></td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="四平行路由">四、平行路由<a hidden class="anchor" aria-hidden="true" href="#四平行路由">#</a></h2>
+<ul>
+<li>通过 <code>@文件夹名</code> 定义，自动注入到 <code>layout</code> 中，与 <code>children</code> 平级</li>
+<li>⚠️ 硬刷新会 404，需定义 <code>default.tsx</code> 解决</li>
+</ul>
+<h2 id="五路由组">五、路由组<a hidden class="anchor" aria-hidden="true" href="#五路由组">#</a></h2>
+<ul>
+<li>文件夹命名 <code>(groupName)</code>，不影响 URL 路径</li>
+<li>可为不同组独立配置 <code>layout</code></li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>app/
+</span></span><span style="display:flex;"><span>├── (a)/
+</span></span><span style="display:flex;"><span>│   └── page.tsx
+</span></span><span style="display:flex;"><span>├── (b)/
+</span></span><span style="display:flex;"><span>│   └── page.tsx
+</span></span></code></pre></div><h2 id="六路由处理程序api-routes">六、路由处理程序（API Routes）<a hidden class="anchor" aria-hidden="true" href="#六路由处理程序api-routes">#</a></h2>
+<h3 id="1-基本结构">1️⃣ 基本结构<a hidden class="anchor" aria-hidden="true" href="#1-基本结构">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>app/api/user/route.ts
+</span></span></code></pre></div><h3 id="2-请求处理示例">2️⃣ 请求处理示例<a hidden class="anchor" aria-hidden="true" href="#2-请求处理示例">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-ts" data-lang="ts"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">NextRequest</span>, <span style="color:#a6e22e">NextResponse</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;next/server&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// GET with query params
+</span></span></span><span style="display:flex;"><span><span style="color:#66d9ef">export</span> <span style="color:#66d9ef">async</span> <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">GET</span>(<span style="color:#a6e22e">request</span>: <span style="color:#66d9ef">NextRequest</span>) {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">id</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">request</span>.<span style="color:#a6e22e">nextUrl</span>.<span style="color:#a6e22e">searchParams</span>.<span style="color:#66d9ef">get</span>(<span style="color:#e6db74">&#34;id&#34;</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NextResponse</span>.<span style="color:#a6e22e">json</span>({ <span style="color:#a6e22e">id</span> });
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// GET with dynamic params
+</span></span></span><span style="display:flex;"><span><span style="color:#66d9ef">export</span> <span style="color:#66d9ef">async</span> <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">GET</span>(
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">request</span>: <span style="color:#66d9ef">NextRequest</span>,
+</span></span><span style="display:flex;"><span>  { <span style="color:#a6e22e">params</span> }<span style="color:#f92672">:</span> { <span style="color:#a6e22e">params</span>: <span style="color:#66d9ef">Promise</span><span style="color:#f92672">&lt;</span>{ <span style="color:#a6e22e">id</span>: <span style="color:#66d9ef">string</span> }<span style="color:#f92672">&gt;</span> }
+</span></span><span style="display:flex;"><span>) {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">const</span> { <span style="color:#a6e22e">id</span> } <span style="color:#f92672">=</span> <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">params</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NextResponse</span>.<span style="color:#a6e22e">json</span>({ <span style="color:#a6e22e">message</span><span style="color:#f92672">:</span> <span style="color:#e6db74">`Hello, </span><span style="color:#e6db74">${</span><span style="color:#a6e22e">id</span><span style="color:#e6db74">}</span><span style="color:#e6db74">!`</span> });
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// POST with body
+</span></span></span><span style="display:flex;"><span><span style="color:#66d9ef">export</span> <span style="color:#66d9ef">async</span> <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">POST</span>(<span style="color:#a6e22e">request</span>: <span style="color:#66d9ef">NextRequest</span>) {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">body</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">request</span>.<span style="color:#a6e22e">json</span>();
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NextResponse</span>.<span style="color:#a6e22e">json</span>(<span style="color:#a6e22e">body</span>);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="3-cookies-操作">3️⃣ Cookies 操作<a hidden class="anchor" aria-hidden="true" href="#3-cookies-操作">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-ts" data-lang="ts"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">cookies</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;next/headers&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">cookieStore</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">cookies</span>();
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">cookieStore</span>.<span style="color:#66d9ef">set</span>(<span style="color:#e6db74">&#34;token&#34;</span>, <span style="color:#e6db74">&#34;value&#34;</span>, { <span style="color:#a6e22e">maxAge</span>: <span style="color:#66d9ef">86400</span>, <span style="color:#a6e22e">httpOnly</span>: <span style="color:#66d9ef">true</span> });
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">token</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">cookieStore</span>.<span style="color:#66d9ef">get</span>(<span style="color:#e6db74">&#34;token&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#a6e22e">token</span><span style="color:#f92672">?</span>.<span style="color:#a6e22e">value</span>);
+</span></span></code></pre></div><h2 id="七ai-集成deepseek">七、AI 集成（DeepSeek）<a hidden class="anchor" aria-hidden="true" href="#七ai-集成deepseek">#</a></h2>
+<h3 id="1-安装依赖">1️⃣ 安装依赖<a hidden class="anchor" aria-hidden="true" href="#1-安装依赖">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>npm i ai @ai-sdk/deepseek @ai-sdk/react
+</span></span></code></pre></div><h3 id="2-创建-api-路由-appapichatroutets">2️⃣ 创建 API 路由 app/api/chat/route.ts<a hidden class="anchor" aria-hidden="true" href="#2-创建-api-路由-appapichatroutets">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-ts" data-lang="ts"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">createDeepSeek</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;@ai-sdk/deepseek&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">streamText</span>, <span style="color:#a6e22e">convertToModelMessages</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;ai&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">deepseek</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">createDeepSeek</span>({ <span style="color:#a6e22e">apiKey</span>: <span style="color:#66d9ef">process.env.DEEPSEEK_API_KEY</span> });
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">export</span> <span style="color:#66d9ef">async</span> <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">POST</span>(<span style="color:#a6e22e">req</span>: <span style="color:#66d9ef">Request</span>) {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">const</span> { <span style="color:#a6e22e">messages</span> } <span style="color:#f92672">=</span> <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">req</span>.<span style="color:#a6e22e">json</span>();
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">result</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">streamText</span>({
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">model</span>: <span style="color:#66d9ef">deepseek</span>(<span style="color:#e6db74">&#34;deepseek-chat&#34;</span>),
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">messages</span>: <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">convertToModelMessages</span>(<span style="color:#a6e22e">messages</span>),
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">system</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;你是一个超级助手&#34;</span>,
+</span></span><span style="display:flex;"><span>  });
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">result</span>.<span style="color:#a6e22e">toUIMessageStreamResponse</span>();
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="3-客户端使用">3️⃣ 客户端使用<a hidden class="anchor" aria-hidden="true" href="#3-客户端使用">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-tsx" data-lang="tsx"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">useChat</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;@ai-sdk/react&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> { <span style="color:#a6e22e">messages</span>, <span style="color:#a6e22e">sendMessage</span> } <span style="color:#f92672">=</span> <span style="color:#a6e22e">useChat</span>(); <span style="color:#75715e">// 默认请求 /api/chat
+</span></span></span></code></pre></div><h2 id="八proxy-代理">八、Proxy 代理<a hidden class="anchor" aria-hidden="true" href="#八proxy-代理">#</a></h2>
+<h3 id="1-主要功能">1️⃣ 主要功能<a hidden class="anchor" aria-hidden="true" href="#1-主要功能">#</a></h3>
+<ul>
+<li><strong>跨域请求处理</strong> （避免 CORS）</li>
+<li><strong>接口转发</strong>（隐藏真实后端地址）</li>
+<li><strong>限流、鉴权、缓存</strong> 等中间层逻辑</li>
+</ul>
+<h3 id="2-使用方式">2️⃣ 使用方式<a hidden class="anchor" aria-hidden="true" href="#2-使用方式">#</a></h3>
+<p>建立文件<code>src/proxy.ts</code>，通过导出一个<code>proxy</code>函数，以下是配置跨域的例子</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-tsx" data-lang="tsx"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">NextRequest</span>, <span style="color:#a6e22e">NextResponse</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;next/server&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">ProxyConfig</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;next/server&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">export</span> <span style="color:#66d9ef">async</span> <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">proxy</span>(<span style="color:#a6e22e">request</span>: <span style="color:#66d9ef">NextRequest</span>) {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">response</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">NextResponse</span>.<span style="color:#a6e22e">next</span>();
+</span></span><span style="display:flex;"><span>    Object.<span style="color:#a6e22e">entries</span>(<span style="color:#a6e22e">corsHeaders</span>).<span style="color:#a6e22e">forEach</span>(([<span style="color:#a6e22e">key</span>, <span style="color:#a6e22e">value</span>]) <span style="color:#f92672">=&gt;</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">response</span>.<span style="color:#a6e22e">headers</span>.<span style="color:#66d9ef">set</span>(<span style="color:#a6e22e">key</span>, <span style="color:#a6e22e">value</span>);
+</span></span><span style="display:flex;"><span>    })
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">response</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">corsHeaders</span> <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#39;Access-Control-Allow-Origin&#39;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#39;*&#39;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#39;Access-Control-Allow-Methods&#39;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#39;GET, POST, PUT, DELETE, OPTIONS&#39;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#39;Access-Control-Allow-Headers&#39;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#39;Content-Type, Authorization&#39;</span>,
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">export</span> <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">config</span>: <span style="color:#66d9ef">ProxyConfig</span> <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>   <span style="color:#a6e22e">matcher</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#39;/api/:path*&#39;</span>,
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>同时，可通过 <code>next.config.js</code> 的 <code>rewrites</code> 实现轻量代理：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-tsx" data-lang="tsx"><span style="display:flex;"><span><span style="color:#a6e22e">module</span>.<span style="color:#a6e22e">exports</span> <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">async</span> <span style="color:#a6e22e">rewrites() {</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> [
+</span></span><span style="display:flex;"><span>      {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">source</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;/api/proxy/:path*&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">destination</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;https://backend.example.com/:path*&#34;</span>,
+</span></span><span style="display:flex;"><span>      },
+</span></span><span style="display:flex;"><span>    ];
+</span></span><span style="display:flex;"><span>  },
+</span></span><span style="display:flex;"><span>};
+</span></span></code></pre></div><h2 id="九客户端组件-vs-服务端组件">九、客户端组件 vs 服务端组件<a hidden class="anchor" aria-hidden="true" href="#九客户端组件-vs-服务端组件">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>特性</th>
+          <th>客户端组件</th>
+          <th>服务端组件</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>指令</td>
+          <td><code>&quot;use client&quot;</code></td>
+          <td>默认（或 <code>&quot;use server&quot;</code>）</td>
+      </tr>
+      <tr>
+          <td>可使用 Hook</td>
+          <td>✅</td>
+          <td>❌</td>
+      </tr>
+      <tr>
+          <td>可使用浏览器 API</td>
+          <td>✅</td>
+          <td>❌</td>
+      </tr>
+      <tr>
+          <td>嵌套限制</td>
+          <td>不可嵌套服务端组件</td>
+          <td>可以嵌套客户端组件</td>
+      </tr>
+      <tr>
+          <td>访问敏感数据</td>
+          <td>❌</td>
+          <td>✅</td>
+      </tr>
+  </tbody>
+</table>
+<blockquote>
+<p>若希望某个模块只在服务端使用，可以 import &ldquo;server-only&rdquo;。</p>
+</blockquote>
+<h2 id="十缓存组件实验性">十、缓存组件（实验性）<a hidden class="anchor" aria-hidden="true" href="#十缓存组件实验性">#</a></h2>
+<blockquote>
+<p>需要 <code>next.config.ts</code> 配置 <code>experimental.cacheComponents = true</code></p>
+</blockquote>
+<h3 id="1-静态内容预渲染">1️⃣ 静态内容（预渲染）<a hidden class="anchor" aria-hidden="true" href="#1-静态内容预渲染">#</a></h3>
+<p>以下情况组件会变成完全静态：</p>
+<ul>
+<li>读取本地文件：<code>fs.readFileSync(...)</code></li>
+<li>动态导入静态数据：<code>await import('data.json')</code></li>
+<li>纯计算（不含动态请求）<code>const names = impData.list.map(item=&gt;item.name).join(',')</code></li>
+</ul>
+<h3 id="2-动态内容--suspense">2️⃣ 动态内容 + Suspense<a hidden class="anchor" aria-hidden="true" href="#2-动态内容--suspense">#</a></h3>
+<p>必须搭配 <code>Suspense</code> 使用，Next.js 通过 PPR（Partial Prerendering）提供静态外壳 + 动态流式填充。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-tsx" data-lang="tsx"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">Suspense</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;react&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">export</span> <span style="color:#66d9ef">default</span> <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">Page() {</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">return</span> (
+</span></span><span style="display:flex;"><span>    &lt;<span style="color:#f92672">Suspense</span> <span style="color:#a6e22e">fallback</span><span style="color:#f92672">=</span>{&lt;<span style="color:#f92672">Loading</span> /&gt;}&gt;
+</span></span><span style="display:flex;"><span>      &lt;<span style="color:#f92672">DynamicComponent</span> /&gt;
+</span></span><span style="display:flex;"><span>    &lt;/<span style="color:#f92672">Suspense</span>&gt;
+</span></span><span style="display:flex;"><span>  );
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><blockquote>
+<p>⚠️ 非确定性函数如 random()、Date.now() 单独使用会报错，需结合 Suspense 和 connection() 标记。</p>
+</blockquote>
+<h3 id="3-use-cache-与-cachelife">3️⃣ &lsquo;use cache&rsquo; 与 cacheLife<a hidden class="anchor" aria-hidden="true" href="#3-use-cache-与-cachelife">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-tsx" data-lang="tsx"><span style="display:flex;"><span><span style="color:#e6db74">&#34;use cache&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">cacheLife</span>(<span style="color:#e6db74">&#34;seconds&#34;</span>); <span style="color:#75715e">// 预设：stale 5s, revalidate 10s, expire 60s
+</span></span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 或自定义
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">cacheLife</span>({
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">stale</span>: <span style="color:#66d9ef">5</span>, <span style="color:#75715e">// 客户端在此时间内直接使用缓存，不向服务器发请求(单位:秒)
+</span></span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">revalidate</span>: <span style="color:#66d9ef">10</span>,  <span style="color:#75715e">// 超过此时间后，服务器收到请求时会在后台重新生成内容(单位:秒)
+</span></span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">expire</span>: <span style="color:#66d9ef">60</span>, <span style="color:#75715e">// 超过此时间无访问，缓存完全失效，下次请求需要等待重新计算(单位:秒)
+</span></span></span><span style="display:flex;"><span>});
+</span></span></code></pre></div><h2 id="十一缓存策略较旧版本">十一、缓存策略（较旧版本）<a hidden class="anchor" aria-hidden="true" href="#十一缓存策略较旧版本">#</a></h2>
+<p><strong>未启用 <code>cacheComponents</code></strong>
+默认情况下 <code>fetch</code> 会被缓存（静态内容）。退出缓存的方法：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-tsx" data-lang="tsx"><span style="display:flex;"><span><span style="color:#75715e">// 1. 页面级别
+</span></span></span><span style="display:flex;"><span><span style="color:#66d9ef">export</span> <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">revalidate</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">export</span> <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">dynamic</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;force-dynamic&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 2. fetch 选项
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">fetch</span>(<span style="color:#a6e22e">url</span>, { <span style="color:#a6e22e">cache</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;no-store&#34;</span> });
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 3. 使用 cookies / headers / searchParams 自动变为动态
+</span></span></span></code></pre></div><h2 id="十二image-组件">十二、Image 组件<a hidden class="anchor" aria-hidden="true" href="#十二image-组件">#</a></h2>
+<h3 id="1-基础用法">1️⃣ 基础用法<a hidden class="anchor" aria-hidden="true" href="#1-基础用法">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-tsx" data-lang="tsx"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> <span style="color:#a6e22e">Image</span> <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;next/image&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 本地图片
+</span></span></span><span style="display:flex;"><span><span style="color:#66d9ef">import</span> <span style="color:#a6e22e">logo</span> <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;./logo.png&#34;</span>;
+</span></span><span style="display:flex;"><span>&lt;<span style="color:#f92672">Image</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span>{<span style="color:#a6e22e">logo</span>} <span style="color:#a6e22e">alt</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;logo&#34;</span> /&gt;; <span style="color:#75715e">// 自动宽高
+</span></span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 或者直接路径 + 宽高
+</span></span></span><span style="display:flex;"><span>&lt;<span style="color:#f92672">Image</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/logo.png&#34;</span> <span style="color:#a6e22e">width</span><span style="color:#f92672">=</span>{<span style="color:#ae81ff">100</span>} <span style="color:#a6e22e">height</span><span style="color:#f92672">=</span>{<span style="color:#ae81ff">100</span>} <span style="color:#a6e22e">alt</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;logo&#34;</span> /&gt;;
+</span></span></code></pre></div><h3 id="2-远程图片配置">2️⃣ 远程图片配置<a hidden class="anchor" aria-hidden="true" href="#2-远程图片配置">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#75715e">// next.config.js
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">module</span>.<span style="color:#a6e22e">exports</span> <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">images</span><span style="color:#f92672">:</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">remotePatterns</span><span style="color:#f92672">:</span> [
+</span></span><span style="display:flex;"><span>      {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">protocol</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;https&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">hostname</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;cdn.example.com&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">pathname</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;/images/**&#34;</span>,
+</span></span><span style="display:flex;"><span>      },
+</span></span><span style="display:flex;"><span>    ],
+</span></span><span style="display:flex;"><span>  },
+</span></span><span style="display:flex;"><span>};
+</span></span></code></pre></div><h3 id="3-优点">3️⃣ 优点<a hidden class="anchor" aria-hidden="true" href="#3-优点">#</a></h3>
+<ul>
+<li>自动懒加载、WebP/AVIF 优化</li>
+<li>防止 CLS（布局偏移）</li>
+<li>支持 placeholder=&ldquo;blur&rdquo; 模糊占位</li>
+</ul>
+<h3 id="4-全局配置">4️⃣ 全局配置<a hidden class="anchor" aria-hidden="true" href="#4-全局配置">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-tsx" data-lang="tsx"><span style="display:flex;"><span><span style="color:#a6e22e">images</span><span style="color:#f92672">:</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">formats</span><span style="color:#f92672">:</span> [<span style="color:#e6db74">&#39;image/avif&#39;</span>, <span style="color:#e6db74">&#39;image/webp&#39;</span>],
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">deviceSizes</span><span style="color:#f92672">:</span> [<span style="color:#ae81ff">640</span>, <span style="color:#ae81ff">750</span>, <span style="color:#ae81ff">828</span>, <span style="color:#ae81ff">1080</span>, <span style="color:#ae81ff">1200</span>, <span style="color:#ae81ff">1920</span>],
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">imageSizes</span><span style="color:#f92672">:</span> [<span style="color:#ae81ff">16</span>, <span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">48</span>, <span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">96</span>],
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="十三script-组件">十三、Script 组件<a hidden class="anchor" aria-hidden="true" href="#十三script-组件">#</a></h2>
+<h3 id="1-基础用法-1">1️⃣ 基础用法<a hidden class="anchor" aria-hidden="true" href="#1-基础用法-1">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-tsx" data-lang="tsx"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> <span style="color:#a6e22e">Script</span> <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;next/script&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>&lt;<span style="color:#f92672">Script</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;https://example.com/script.js&#34;</span> <span style="color:#a6e22e">strategy</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;afterInteractive&#34;</span> /&gt;;
+</span></span></code></pre></div><p><code>strategy</code> 选项：</p>
+<ul>
+<li><code>beforeInteractive</code>：阻塞页面渲染，在页面代码前加载</li>
+<li><code>afterInteractive</code>：页面变为可交互后加载（默认）</li>
+<li><code>lazyOnload</code>：浏览器空闲时加载</li>
+</ul>
+<h3 id="2-事件监听">2️⃣ 事件监听<a hidden class="anchor" aria-hidden="true" href="#2-事件监听">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-tsx" data-lang="tsx"><span style="display:flex;"><span>&lt;<span style="color:#f92672">Script</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;...&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">onLoad</span><span style="color:#f92672">=</span>{() <span style="color:#f92672">=&gt;</span> <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34;loaded&#34;</span>)}
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">onReady</span><span style="color:#f92672">=</span>{() <span style="color:#f92672">=&gt;</span> <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34;ready, each mount&#34;</span>)}
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">onError</span><span style="color:#f92672">=</span>{(<span style="color:#a6e22e">e</span>) <span style="color:#f92672">=&gt;</span> <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">error</span>(<span style="color:#a6e22e">e</span>)}
+</span></span><span style="display:flex;"><span>/&gt;
+</span></span></code></pre></div><blockquote>
+<p><code>onReady</code> 在每次组件挂载时都会执行（例如路由切换后重新挂载）。</p>
+</blockquote>
+<p>✅ 小提示</p>
+<ul>
+<li>平行路由 + 硬刷新 → 记得添加 <code>default.tsx</code></li>
+<li>API 路由中设置 Cookie 必须用 <code>NextResponse</code>，不能直接 <code>cookies().set</code></li>
+<li><code>redirect</code> 和 <code>permanentRedirect</code> 在非 Server Action 环境需结合 <code>try/catch</code> 使用</li>
+<li>图片远程域名需配置 <code>remotePatterns</code>，避免使用 <code>dangerouslyAllowSVG</code> 等风险配置</li>
+</ul>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="http://localhost:1313/">ZTre4itchaY的博客</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>
