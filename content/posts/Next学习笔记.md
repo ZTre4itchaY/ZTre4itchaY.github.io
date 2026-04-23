@@ -1,6 +1,5 @@
 +++
 title = "Next 学习笔记（持续更新中）"
-authors = ["zyb"]    # 用 YAML 格式，作者用数组
 date = "2026-04-23T18:02:16+08:00"
 draft = false
 +++
